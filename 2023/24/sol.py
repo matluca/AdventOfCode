@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from sympy import solve, Symbol
+
 
 def get_input(filename):
     f = open(filename, 'r')
@@ -47,14 +49,25 @@ def sol1(filename, minimum, maximum):
 
 def sol2(filename):
     hailstones = get_input(filename)
+    equations = []
     for hailstone in hailstones[:4]:
         pos, vel = hailstone
         x, y, z = pos
         vx, vy, vz = vel
-        eq = f'(x-{x})/(a-{vx})=(y-{y})/(b-{vy})=(z-{z})/(c-{vz})'
-        eq = eq.replace('--', '+')
-        print(eq)
-    return "Solve with Wolfram Alpha"
+        eq1 = f'(x-{x}) * (b-{vy}) - (y-{y}) * (a-{vx})'
+        eq1 = eq1.replace('--', '+')
+        eq2 = f'(x-{x}) * (c-{vz}) - (z-{z}) * (a-{vx})'
+        eq2 = eq2.replace('--', '+')
+        equations.append(eq1)
+        equations.append(eq2)
+    x = Symbol('x')
+    y = Symbol('y')
+    z = Symbol('z')
+    a = Symbol('a')
+    b = Symbol('b')
+    c = Symbol('c')
+    solutions = solve(equations, x, y, z, a, b, c, dict=True)
+    return int(solutions[0][x] + solutions[0][y] + solutions[0][z])
 
 
 if __name__ == '__main__':
