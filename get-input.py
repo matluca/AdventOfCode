@@ -7,6 +7,7 @@ import argparse
 import browser_cookie3
 import datetime
 from datetime import date
+import os
 import requests
 import sys
 
@@ -44,4 +45,6 @@ if __name__ == '__main__':
         print("Could not get input: ", resp)
         print(resp.content.decode('utf-8'))
         sys.exit(1)
-    print(resp.content.decode('utf-8'), file=open(f'./{year}/{day}/input.txt', "w"))
+    dirname = os.path.dirname(__file__)
+    out_file = open(os.path.join(dirname, f'{year}/{day}/input.txt'), "w")
+    print(resp.content.decode('utf-8'), file=out_file)
