@@ -38,13 +38,14 @@ if __name__ == '__main__':
     year, day = get_year_and_day()
     url = f'https://adventofcode.com/{year}/day/{day}/input'
     cj = browser_cookie3.firefox(domain_name='adventofcode.com')
-    resp = requests.get(url, cookies=cj)
-    if day < 10:
-        day = f'0{day}'
+    resp = requests.get(url, cookies=cj,
+                        headers={'User-agent': 'github.com/matluca/AdventOfCode by github@matluca.com'})
     if resp.status_code != 200:
         print("Could not get input: ", resp)
         print(resp.content.decode('utf-8'))
         sys.exit(1)
     dirname = os.path.dirname(__file__)
+    if day < 10:
+        day = f'0{day}'
     out_file = open(os.path.join(dirname, f'{year}/{day}/input.txt'), "w")
     print(resp.content.decode('utf-8'), file=out_file)
