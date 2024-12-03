@@ -11,6 +11,8 @@ import os
 import requests
 import sys
 
+firefox_location = '/home/luca/.mozilla/firefox'
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-y", "--year", help="Year", type=int)
 parser.add_argument("-d", "--day", help="Day", type=int)
@@ -34,18 +36,27 @@ def get_year_and_day():
     return y, d
 
 
+def get_cookie_file_locations():
+    return [f'{x.path}/cookies.sqlite' for x in os.scandir(firefox_location) if
+            (x.is_dir() and "default" in x.path)]
+
+
 if __name__ == '__main__':
     year, day = get_year_and_day()
     url = f'https://adventofcode.com/{year}/day/{day}/input'
-    cj = browser_cookie3.firefox(domain_name='adventofcode.com')
-    resp = requests.get(url, cookies=cj,
-                        headers={'User-agent': 'github.com/matluca/AdventOfCode by github@matluca.com'})
-    if resp.status_code != 200:
-        print("Could not get input: ", resp)
-        print(resp.content.decode('utf-8'))
-        sys.exit(1)
-    dirname = os.path.dirname(__file__)
-    if day < 10:
-        day = f'0{day}'
-    out_file = open(os.path.join(dirname, f'{year}/{day}/input.txt'), "w")
-    print(resp.content.decode('utf-8'), file=out_file)
+    for cookie_file in get_cookie_file_locations():
+        cj = browser_cookie3.firefox(domain_name='adventofcode.com', cookie_file=cookie_file)
+        if len(cj) == 0:
+            continue
+        resp = requests.get(url, cookies=cj,
+                            headers={'User-agent': 'github.com/matluca/AdventOfCode by github@matluca.com'})
+        if resp.status_code != 200:
+            print("Could not get input: ", resp)
+            print(resp.content.decode('utf-8'))
+            sys.exit(1)
+        dirname = os.path.dirname(__file__)
+        if day < 10:
+            day = f'0{day}'
+        out_file = open(os.path.join(dirname, f'{year}/{day}/input.txt'), "w")
+        print(resp.content.decode('utf-8'), file=out_file)
+        break
