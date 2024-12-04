@@ -58,5 +58,5 @@ if __name__ == '__main__':
         if day < 10:
             day = f'0{day}'
         out_file = open(os.path.join(dirname, f'{year}/{day}/input.txt'), "w")
-        print(resp.content.decode('utf-8'), file=out_file)
+        print(resp.content.decode('utf-8'), end='', file=out_file)
         break
