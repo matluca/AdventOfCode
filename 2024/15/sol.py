@@ -121,8 +121,7 @@ def next_grid_2(grid, move):
     return grid
 
 
-def sol2(filename):
-    old_grid, moves = get_input(filename)
+def enlarge_grid(old_grid):
     grid = {}
     for p in old_grid.keys():
         x, y = p
@@ -138,6 +137,12 @@ def sol2(filename):
         elif old_grid[p] == '@':
             grid[(x, 2 * y)] = '@'
             grid[(x, 2 * y + 1)] = '.'
+    return grid
+
+
+def sol2(filename):
+    old_grid, moves = get_input(filename)
+    grid = enlarge_grid(old_grid)
     for move in moves:
         grid = next_grid_2(grid, move)
     tot = 0
