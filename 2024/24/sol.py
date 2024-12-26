@@ -55,35 +55,6 @@ def label(letter, i):
     return f'{letter}{i}'
 
 
-def build_sum_gates(n):
-    gates = [('x00', 'y00', 'XOR', 'z00'), ('x00', 'y00', 'AND', 'c01')]
-    for i in range(1, n):
-        x = f'x{i}'
-        y = f'y{i}'
-        s = f's{i}'
-        z = f'z{i}'
-        a = f'a{i}'
-        c = f'c{i}'
-        p = f'p{i}'
-        nc = f'c{i + 1}'
-        if i < 10:
-            s = f's0{i}'
-            z = f'z0{i}'
-            a = f'a0{i}'
-            x = f'x0{i}'
-            y = f'y0{i}'
-            c = f'c0{i}'
-            p = f'p0{i}'
-        if i < 9:
-            nc = f'c0{i + 1}'
-        gates.append((x, y, 'XOR', s))
-        gates.append((c, s, 'XOR', z))
-        gates.append((c, s, 'AND', p))
-        gates.append((x, y, 'AND', a))
-        gates.append((p, a, 'OR', nc))
-    return gates
-
-
 def find(gates, x, y, op):
     for gate in gates:
         a, b, o, t = gate
@@ -108,6 +79,14 @@ def find_z(gates, z):
     return None
 
 
+def find_c(gates, c):
+    for gate in gates:
+        a, b, o, t = gate
+        if t == c and o == 'OR':
+            return gate
+    return None
+
+
 def sol2(filename):
     inputs, gates = get_input(filename)
     size_n = int(len(inputs) / 2)
@@ -118,38 +97,29 @@ def sol2(filename):
         and_gate = find(gates, x, y, 'AND')
         xor_gate = find(gates, x, y, 'XOR')
         a, s = label('a', i), label('s', i)
-        z = label('z', i)
-        mapping[and_gate[3]] = a
-        mapping[xor_gate[3]] = s
-        inv_mapping = {v: k for k, v in mapping.items()}
+        z, p = label('z', i), label('p', i)
         z_gate = find_partial(gates, xor_gate[3], 'XOR')
-        # TODO, find full with and + xor instead of finding partial
-        if z_gate is None:
-            print('not found', i, xor_gate[3])
-            zz_gate = find_z(gates, z)
-            print(zz_gate)
-            aa, bb, oop, tt = zz_gate
-            try:
-                print(mapping[aa])
-            except KeyError:
-                exchange.append((xor_gate[3], aa))
-                print(aa, "not mapped")
-            try:
-                print(mapping[bb])
-            except KeyError:
-                print(bb, "not mapped")
-                exchange.append((xor_gate[3], bb))
+        p_gate = find_partial(gates, xor_gate[3], 'AND')
+        if z_gate is not None and p_gate is not None:
+            zc = [a for a in (z_gate[0], z_gate[1]) if a != xor_gate[3]][0]
+            pc = [a for a in (p_gate[0], p_gate[1]) if a != xor_gate[3]][0]
+            if zc == pc and z_gate[3] != z:
+                exchange.append(z_gate[3])
+                exchange.append(z)
+                continue
+        if z_gate is None and p_gate is None:
+            exchange.append(xor_gate[3])
+            real_z_gate = find_z(gates, z)
+            a, b = real_z_gate[0], real_z_gate[1]
+            if find_c(gates, a) is not None:
+                exchange.append(b)
+            if find_c(gates, b) is not None:
+                exchange.append(a)
             continue
-        if z_gate[3] != z:
-            print('error', i, z_gate)
-            exchange.append((z_gate[3], z))
-            continue
-    list_exchange = []
-    for ex in exchange:
-        a, b = ex
-        list_exchange.append(a)
-        list_exchange.append(b)
-    return ','.join(sorted(list_exchange))
+        nc_gate = find(gates, p_gate[3], and_gate[3], 'OR')
+        if nc_gate is None:
+            print('error', i)
+    return ','.join(sorted(exchange))
 
 
 if __name__ == '__main__':
