@@ -42,6 +42,33 @@ def find_groups(graph, n):
     return groups
 
 
+def find_clique(graph, node):
+    clique = {node}
+    for n in graph[node]:
+        connected = True
+        for c in clique:
+            if n not in graph[c]:
+                connected = False
+                continue
+        if connected:
+            clique.add(n)
+    return clique
+
+
+def find_max_clique(graph):
+    max_clique = set()
+    len_max_clique = 0
+    visited = set()
+    while len(visited) < len(graph.keys()):
+        node = [n for n in graph.keys() if n not in visited][0]
+        clique = find_clique(graph, node)
+        if len(clique) > len_max_clique:
+            len_max_clique = len(clique)
+            max_clique = clique
+        visited |= clique
+    return ','.join(sorted(list(max_clique)))
+
+
 def sol1(filename):
     graph = get_input(filename)
     return len(find_groups(graph, 3))
@@ -49,11 +76,7 @@ def sol1(filename):
 
 def sol2(filename):
     graph = get_input(filename)
-    for n in range(3, len(graph.keys())):
-        groups = find_groups(graph, n)
-        if len(groups) == 1:
-            return ','.join(groups.pop())
-    return None
+    return find_max_clique(graph)
 
 
 if __name__ == '__main__':
