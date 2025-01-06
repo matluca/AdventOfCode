@@ -3,7 +3,7 @@ def get_n_parameters(opcode):
         return 3
     if opcode in [5, 6]:
         return 2
-    if opcode in [3, 4]:
+    if opcode in [3, 4, 9]:
         return 1
     if opcode in [99]:
         return 0
@@ -15,10 +15,11 @@ class Intcode:
             self.input = []
         else:
             self.input = inputs
-        self.program = program
+        self.program = {i: v for i, v in enumerate(program)}
         self.output = []
         self.halted = False
         self.pointer = 0
+        self.relative_base = 0
         self.opcode_map = {
             1: self.add,
             2: self.mul,
@@ -28,6 +29,7 @@ class Intcode:
             6: self.jump_if_false,
             7: self.less_then,
             8: self.equals,
+            9: self.adjust_relative_base,
             99: self.halt,
         }
 
@@ -44,22 +46,34 @@ class Intcode:
         return opcode, modes
 
     def value(self, pointer, mode):
-        if mode == 0:
+        if mode == 0 and pointer in self.program.keys() and self.program[pointer] in self.program.keys():
             return self.program[self.program[pointer]]
-        return self.program[pointer]
+        if mode == 1 and pointer in self.program.keys():
+            return self.program[pointer]
+        if mode == 2:
+            p = self.program[pointer] + self.relative_base
+            if p in self.program.keys():
+                return self.program[p]
+        return 0
 
     def add(self, modes):
-        self.program[self.program[self.pointer + 3]] = self.value(self.pointer + 1, modes[0]) + self.value(
-            self.pointer + 2, modes[1])
+        self.set(self.program[self.pointer + 3], modes[2], self.value(self.pointer + 1, modes[0]) + self.value(
+            self.pointer + 2, modes[1]))
         self.pointer += 4
+
+    def set(self, pointer, mode, value):
+        if mode == 2:
+            self.program[pointer + self.relative_base] = value
+        else:
+            self.program[pointer] = value
 
     def mul(self, modes):
-        self.program[self.program[self.pointer + 3]] = self.value(self.pointer + 1, modes[0]) * self.value(
-            self.pointer + 2, modes[1])
+        self.set(self.program[self.pointer + 3], modes[2], self.value(self.pointer + 1, modes[0]) * self.value(
+            self.pointer + 2, modes[1]))
         self.pointer += 4
 
-    def inp(self, _):
-        self.program[self.program[self.pointer + 1]] = self.input.pop(0)
+    def inp(self, modes):
+        self.set(self.program[self.pointer + 1], modes[0], self.input.pop(0))
         self.pointer += 2
 
     def out(self, modes):
@@ -80,17 +94,21 @@ class Intcode:
 
     def less_then(self, modes):
         if self.value(self.pointer + 1, modes[0]) < self.value(self.pointer + 2, modes[1]):
-            self.program[self.program[self.pointer + 3]] = 1
+            self.set(self.program[self.pointer + 3], modes[2], 1)
         else:
-            self.program[self.program[self.pointer + 3]] = 0
+            self.set(self.program[self.pointer + 3], modes[2], 0)
         self.pointer += 4
 
     def equals(self, modes):
         if self.value(self.pointer + 1, modes[0]) == self.value(self.pointer + 2, modes[1]):
-            self.program[self.program[self.pointer + 3]] = 1
+            self.set(self.program[self.pointer + 3], modes[2], 1)
         else:
-            self.program[self.program[self.pointer + 3]] = 0
+            self.set(self.program[self.pointer + 3], modes[2], 0)
         self.pointer += 4
+
+    def adjust_relative_base(self, modes):
+        self.relative_base += self.value(self.pointer + 1, modes[0])
+        self.pointer += 2
 
     def halt(self, _):
         self.halted = True

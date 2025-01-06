@@ -21,7 +21,7 @@ def amplify(program, phases, second_input):
         intcode = Intcode(program.copy(), [phases[i], second_inp])
         intcode.run()
         second_inp = intcode.output[0]
-    return second_inp, False
+    return second_inp
 
 
 def sol1(filename):
@@ -29,7 +29,7 @@ def sol1(filename):
     phase_settings = [0, 1, 2, 3, 4]
     max_signal = 0
     for perm in itertools.permutations(phase_settings):
-        amp, _ = amplify(program, perm, 0)
+        amp = amplify(program.copy(), perm, 0)
         if amp > max_signal:
             max_signal = amp
     return max_signal
