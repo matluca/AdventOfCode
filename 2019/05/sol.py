@@ -3,7 +3,7 @@ import time
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from intcode import run
+from intcode import Intcode
 
 
 def get_input(filename):
@@ -15,16 +15,18 @@ def get_input(filename):
 
 def sol1(filename):
     program = get_input(filename)
-    _, outputs = run(program, input_value=1)
-    print(f'Tests: {outputs[:-1]}')
-    return outputs[-1]
+    intcode = Intcode(program, inputs=[1])
+    intcode.run()
+    print(f'Tests: {intcode.output[:-1]}')
+    return intcode.output[-1]
 
 
 def sol2(filename):
     program = get_input(filename)
-    _, outputs = run(program, input_value=5)
-    print(f'Tests: {outputs[:-1]}')
-    return outputs[-1]
+    intcode = Intcode(program, inputs=[5])
+    intcode.run()
+    print(f'Tests: {intcode.output[:-1]}')
+    return intcode.output[-1]
 
 
 if __name__ == '__main__':

@@ -9,93 +9,96 @@ def get_n_parameters(opcode):
         return 0
 
 
-def decode_opcode(program, pointer):
-    opcode = program[pointer] % 100
-    n_parameters = get_n_parameters(opcode)
-    modes = [0] * n_parameters
-    r = program[pointer] // 100
-    i = 0
-    while r > 0:
-        modes[i] = r % 10
-        r = r // 10
-        i += 1
-    return opcode, modes
+class Intcode:
+    def __init__(self, program, inputs=None):
+        if input is None:
+            self.input = []
+        else:
+            self.input = inputs
+        self.program = program
+        self.output = []
+        self.halted = False
+        self.pointer = 0
+        self.opcode_map = {
+            1: self.add,
+            2: self.mul,
+            3: self.inp,
+            4: self.out,
+            5: self.jump_if_true,
+            6: self.jump_if_false,
+            7: self.less_then,
+            8: self.equals,
+            99: self.halt,
+        }
 
+    def decode_opcode(self):
+        opcode = self.program[self.pointer] % 100
+        n_parameters = get_n_parameters(opcode)
+        modes = [0] * n_parameters
+        r = self.program[self.pointer] // 100
+        i = 0
+        while r > 0:
+            modes[i] = r % 10
+            r = r // 10
+            i += 1
+        return opcode, modes
 
-def value(program, pointer, mode):
-    if mode == 0:
-        return program[program[pointer]]
-    return program[pointer]
+    def value(self, pointer, mode):
+        if mode == 0:
+            return self.program[self.program[pointer]]
+        return self.program[pointer]
 
+    def add(self, modes):
+        self.program[self.program[self.pointer + 3]] = self.value(self.pointer + 1, modes[0]) + self.value(
+            self.pointer + 2, modes[1])
+        self.pointer += 4
 
-def add(program, pointer, modes):
-    program[program[pointer + 3]] = value(program, pointer + 1, modes[0]) + value(program, pointer + 2, modes[1])
-    return program, pointer + 4
+    def mul(self, modes):
+        self.program[self.program[self.pointer + 3]] = self.value(self.pointer + 1, modes[0]) * self.value(
+            self.pointer + 2, modes[1])
+        self.pointer += 4
 
+    def inp(self, _):
+        self.program[self.program[self.pointer + 1]] = self.input.pop(0)
+        self.pointer += 2
 
-def mul(program, pointer, modes):
-    program[program[pointer + 3]] = value(program, pointer + 1, modes[0]) * value(program, pointer + 2, modes[1])
-    return program, pointer + 4
+    def out(self, modes):
+        self.output.append(self.value(self.pointer + 1, modes[0]))
+        self.pointer += 2
 
+    def jump_if_true(self, modes):
+        if self.value(self.pointer + 1, modes[0]) != 0:
+            self.pointer = self.value(self.pointer + 2, modes[1])
+        else:
+            self.pointer += 3
 
-def inp(program, pointer, input_value):
-    program[program[pointer + 1]] = input_value
-    return program, pointer + 2
+    def jump_if_false(self, modes):
+        if self.value(self.pointer + 1, modes[0]) == 0:
+            self.pointer = self.value(self.pointer + 2, modes[1])
+        else:
+            self.pointer += 3
 
+    def less_then(self, modes):
+        if self.value(self.pointer + 1, modes[0]) < self.value(self.pointer + 2, modes[1]):
+            self.program[self.program[self.pointer + 3]] = 1
+        else:
+            self.program[self.program[self.pointer + 3]] = 0
+        self.pointer += 4
 
-def out(program, pointer, modes, outputs):
-    outputs.append(value(program, pointer + 1, modes[0]))
-    return program, pointer + 2, outputs
+    def equals(self, modes):
+        if self.value(self.pointer + 1, modes[0]) == self.value(self.pointer + 2, modes[1]):
+            self.program[self.program[self.pointer + 3]] = 1
+        else:
+            self.program[self.program[self.pointer + 3]] = 0
+        self.pointer += 4
 
+    def halt(self, _):
+        self.halted = True
 
-def jump_if_true(program, pointer, modes):
-    if value(program, pointer + 1, modes[0]) != 0:
-        return program, value(program, pointer + 2, modes[1])
-    return program, pointer + 3
+    def execute(self):
+        opcode, modes = self.decode_opcode()
+        self.opcode_map[opcode](modes)
 
-
-def jump_if_false(program, pointer, modes):
-    if value(program, pointer + 1, modes[0]) == 0:
-        return program, value(program, pointer + 2, modes[1])
-    return program, pointer + 3
-
-
-def less_then(program, pointer, modes):
-    if value(program, pointer + 1, modes[0]) < value(program, pointer + 2, modes[1]):
-        program[program[pointer + 3]] = 1
-    else:
-        program[program[pointer + 3]] = 0
-    return program, pointer + 4
-
-
-def equals(program, pointer, modes):
-    if value(program, pointer + 1, modes[0]) == value(program, pointer + 2, modes[1]):
-        program[program[pointer + 3]] = 1
-    else:
-        program[program[pointer + 3]] = 0
-    return program, pointer + 4
-
-
-def run(program, input_value=None):
-    pointer = 0
-    outputs = []
-    while True:
-        opcode, modes = decode_opcode(program, pointer)
-        if opcode == 99:
-            return program, outputs
-        elif opcode == 1:
-            program, pointer = add(program, pointer, modes)
-        elif opcode == 2:
-            program, pointer = mul(program, pointer, modes)
-        elif opcode == 3:
-            program, pointer = inp(program, pointer, input_value)
-        elif opcode == 4:
-            program, pointer, outputs = out(program, pointer, modes, outputs)
-        elif opcode == 5:
-            program, pointer = jump_if_true(program, pointer, modes)
-        elif opcode == 6:
-            program, pointer = jump_if_false(program, pointer, modes)
-        elif opcode == 7:
-            program, pointer = less_then(program, pointer, modes)
-        elif opcode == 8:
-            program, pointer = equals(program, pointer, modes)
+    def run(self):
+        while not self.halted:
+            self.execute()

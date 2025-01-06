@@ -3,7 +3,7 @@ import time
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from intcode import run
+from intcode import Intcode
 
 
 
@@ -18,8 +18,9 @@ def sol1(filename):
     memory = get_input(filename)
     memory[1] = 12
     memory[2] = 2
-    memory = run(memory)[0]
-    return memory[0]
+    program = Intcode(memory)
+    program.run()
+    return program.program[0]
 
 
 def sol2(filename):
@@ -29,7 +30,9 @@ def sol2(filename):
             inp = memory.copy()
             inp[1] = noun
             inp[2] = verb
-            if run(inp)[0][0] == 19690720:
+            program = Intcode(inp)
+            program.run()
+            if program.program[0] == 19690720:
                 return 100 * noun + verb
     return 0
 
