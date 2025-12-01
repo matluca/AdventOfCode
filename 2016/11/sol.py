@@ -114,7 +114,8 @@ def next_possibilities(floors):
 def sol1(filename):
     floors = get_input(filename)
     floors[1].append('E')
-    visited = set(floors_to_string(floors))
+    visited = set()
+    visited.add(floors_to_string(floors))
     return min_steps(floors, visited, 0)
 
 
