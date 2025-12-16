@@ -3,6 +3,8 @@ import json
 import time
 import copy
 from functools import cmp_to_key
+from cachetools import cached
+from cachetools.keys import hashkey
 
 
 def get_input(filename):
@@ -23,6 +25,23 @@ def is_valid(floors):
             if elem not in generators and len(generators) > 0:
                 return False
     return True
+
+
+def combinations(floors):
+    locations = {}
+    elements = set()
+    for floor, objects in floors.items():
+        for obj in objects:
+            locations[obj] = floor
+            elements.add(obj.split('-')[0])
+    combs = []
+    for element in elements:
+        if element == 'E':
+            continue
+        a, b = locations[element + '-M'], locations[element + '-G']
+        combs.append((min(a, b), max(a, b)))
+    combs.sort()
+    return locations['E'], tuple(combs)
 
 
 def next_possibilities(floors):
@@ -63,6 +82,8 @@ def next_possibilities(floors):
                 new_floors[elevator_floor + 1].append('E')
                 alternatives.append(new_floors)
             if elevator_floor > 1:
+                if obj.split('-')[0] != obj2.split('-')[0]:
+                    continue
                 new_floors = copy.deepcopy(floors)
                 new_floors[elevator_floor].remove(obj)
                 new_floors[elevator_floor].remove(obj2)
@@ -71,30 +92,7 @@ def next_possibilities(floors):
                 new_floors[elevator_floor - 1].append(obj2)
                 new_floors[elevator_floor - 1].append('E')
                 alternatives.append(new_floors)
-    return alternatives
-
-
-# @cached(cache={}, key=lambda floors, visited, steps: hashkey(floors_to_string(floors)))
-def min_steps(floors, visited, steps):
-    #if floors_to_string(floors) in visited:
-    #    return float('infinity')
-    print(floors, steps)
-    if not is_valid(floors):
-        return float('infinity')
-    new_visited = visited.copy()
-    new_visited.add(floors_to_string(floors))
-    if steps > 13:
-        return float('infinity')
-    if len(floors[1]) == 0 and len(floors[2]) == 0 and len(floors[3]) == 0:
-        return steps
-    possibilities = next_possibilities(floors)
-    poss_steps = []
-    for poss in possibilities:
-        if is_valid(poss) and floors_to_string(poss) not in new_visited:
-            poss_steps.append(min_steps(poss, new_visited, steps + 1))
-    if len(poss_steps) > 0:
-        return min(poss_steps)
-    return float('infinity')
+    return [alt for alt in alternatives if is_valid(alt)]
 
 
 def floors_to_string(floors):
@@ -141,9 +139,11 @@ def compare_states(state1, state2):
     return 0
 
 
+@cached(cache={}, key=lambda floors: hashkey(floors_to_string(floors)))
 def bfs(floors):
     queue = [(floors_to_string(floors), 0)]
     visited = set(floors_to_string(floors))
+    visited_combs = set(combinations(floors))
     while queue:
         queue.sort(key=cmp_to_key(compare_states))
         current_state = queue.pop(0)
@@ -151,10 +151,9 @@ def bfs(floors):
         if distance(current_floors_str) == 0:
             return current_steps
         current_floors = string_to_floors(current_floors_str)
-        print(current_floors_str, current_steps, distance(current_floors_str))
         for poss in next_possibilities(current_floors):
             poss_str = floors_to_string(poss)
-            if is_valid(poss) and poss_str not in visited:
+            if poss_str not in visited and combinations(poss) not in visited_combs:
                 visited.add(poss_str)
                 queue.append((poss_str, current_steps + 1))
     return None
@@ -164,14 +163,13 @@ def bfs(floors):
 def sol1(filename):
     floors = get_input(filename)
     floors[1].append('E')
-    visited = set()
-    visited.add(floors_to_string(floors))
     return bfs(floors)
 
 
 def sol2(filename):
-    _ = get_input(filename)
-    return 0
+    floors = get_input(filename)
+    floors[1].append('E')
+    return bfs(floors) + 12 + 12
 
 
 if __name__ == '__main__':
@@ -181,8 +179,7 @@ if __name__ == '__main__':
     print(f'Solution: {sol1("input.txt")}')
     part1 = time.time()
     print(f'Elapsed time: {part1 - start}')
-    # print('--- Part 2 ---')
-    # print(f'Test: {sol2("test.txt")}')
-    # print(f'Solution: {sol2("input.txt")}')
-    # part2 = time.time()
-    # print(f'Elapsed time: {part2 - part1}')
+    print('--- Part 2 ---')
+    print(f'Solution: {sol2("input.txt")}')
+    part2 = time.time()
+    print(f'Elapsed time: {part2 - part1}')
