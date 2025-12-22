@@ -11,7 +11,7 @@ import os
 import requests
 import sys
 
-firefox_location = '/home/luca/.mozilla/firefox'
+firefox_location = '/home/luca/snap/firefox/common/.mozilla/firefox'
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-y", "--year", help="Year", type=int)
@@ -38,7 +38,7 @@ def get_year_and_day():
 
 def get_cookie_file_locations():
     return [f'{x.path}/cookies.sqlite' for x in os.scandir(firefox_location) if
-            (x.is_dir() and "default" in x.path)]
+            (x.is_dir() and ("default" in x.path or "Profile 1" in x.path))]
 
 
 if __name__ == '__main__':
