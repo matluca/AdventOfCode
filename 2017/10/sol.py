@@ -44,7 +44,13 @@ def dense(elements):
         for j in range(2, 16):
             x = x ^ elements[16 * i + j]
         res.append(hex(x))
-    return ''.join([str(x)[2:] for x in res])
+    to_hex = ""
+    for x in res:
+        if len(str(x)) == 4:
+            to_hex += str(x)[2:]
+        else:
+            to_hex += "0" + str(x)[2:]
+    return to_hex
 
 
 def sol2(filename):
